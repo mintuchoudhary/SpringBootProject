@@ -1,10 +1,15 @@
 package com.m2.springboot;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 //import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 //import org.springframework.cloud.netflix.zuul.EnableZuulProxy;
 import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -22,8 +27,11 @@ import java.util.logging.Logger;
 //@RefreshScope
 //@EnableAdminServer
 @EnableSwagger2
-public class SpringBootWebApplication {
+public class SpringBootWebApplication implements ApplicationRunner {
 	private static final Logger LOG = Logger.getLogger(SpringBootWebApplication.class.getName());
+
+	@Autowired
+	private KafkaTemplate<String, String> kafkaTemplate;
 
 	public static void main(String[] args) {
 		LOG.info("start of main class");
@@ -39,6 +47,20 @@ public class SpringBootWebApplication {
 	public Docket productApi() {
 		return new Docket(DocumentationType.SWAGGER_2).select()
 				.apis(RequestHandlerSelectors.basePackage("com.m2.springboot")).build();
+	}
+
+	@Override
+	public void run(ApplicationArguments applicationArguments) throws Exception {
+		sendMessage("Hi Welcome to Spring For Apache Kafka");
+	}
+
+	@KafkaListener(topics = "kafkatopic", groupId = "group-id")
+	public void listen(String message) {
+		System.out.println("Received Messasge in group - group-id: " + message);
+	}
+
+	public void sendMessage(String msg) {
+		kafkaTemplate.send("kafkatopic", msg);
 	}
 }
 
